@@ -2,8 +2,8 @@
 * 头部组件*/
 import React,{Component} from 'react'
 import axios from 'axios'
-import logo from '../images/logo.png'
-
+import logo from '../images/newspaper.png'
+import {Link} from 'react-router'
 import {
     Button,
     Row,
@@ -13,12 +13,18 @@ import {
     Modal,
     Form,
     Input,
-    Checkbox
+    Tabs,
+    //其他都是标签组件，只有这个是js组件
+    message
 } from 'antd';
 
 
 //我也不知道是啥，官方提供的让From用的。
 const FormItem = Form.Item;
+//官方提供让tabs用的
+const TabPane = Tabs.TabPane;
+// 菜单项组件
+const MenuItem = Menu.Item
 
 
 
@@ -34,18 +40,90 @@ class NewsHeader extends Component {
         }
     }
 
-
-//我也不知道是啥，官方提供的让From用的。
-    handleSubmit = (e) => {
-        e.preventDefault();
-        this.props.form.validateFields((err, values) => {
-            if (!err) {
-                console.log('Received values of form: ', values);
-            }
-        });
+    componentDidMount () {
+        // 读取保存到local中的username
+        const username = localStorage.getItem('username')
+        if(username) {
+            // 更新状态
+            this.setState({username})
+        }
     }
 
-    //点击用户中心时，弹出一个对话框的函数
+
+//No,获取当前表单域提交的内容，并且进行解析。
+    /*
+     处理提交登陆的请求
+     */
+    handleSubmit = (isLogin) => {
+
+        //官网提供
+        // this.props.form.validateFields((err, values) => {
+        //     if (!err) {
+        //         console.log('Received values of form: ', values);//{username: "1234", password: "123456"}
+        //     }
+        // });
+
+        // console.log(this.props.form);//{getFieldsValue: ƒ, getFieldValue: ƒ, getFieldInstance: ƒ, setFieldsValue: ƒ, setFields: ƒ, …}
+
+        //收集表单输入的数据
+        // console.log(this.props.form.getFieldsValue());//{username: "1234", password: "123456", r_username: undefined, r_password: undefined, r_confirmPassword: undefined}
+        const {username, password, r_userName, r_password, r_confirmPassword} = this.props.form.getFieldsValue();
+    //    准备url
+    //    登录url:http://newsapi.gugujiankong.com/Handler.ashx?action=login&username=zxfjd3g&password=123123
+    //    注册url:http://newsapi.gugujiankong.com/Handler.ashx?action=register&r_userName=abc&r_password=123123&r_confirmPassword=123123
+        let url = 'http://newsapi.gugujiankong.com/Handler.ashx?'
+        if (isLogin){
+        //    登录操作，登陆的话就将数据进行验证
+        //    http://newsapi.gugujiankong.com/Handler.ashx?action=register&undefined=abc&123123=123123&123123=undefined
+            url += "action=login&username="+username+"&password="+password;
+        }else{
+        //    注册操作，注册的话就将数据进行保存
+            url += "action=register&r_userName="+username+"&r_password="+password+"&r_confirmPassword="+r_confirmPassword;
+        }
+
+    //    发请求
+        axios.get(url)
+            .then(response=>{
+            //    清除输入的数据
+                this.props.form.resetFields();
+                //请求返回的数据？？？？？？
+                console.log(response.data)
+                const result = response.data;
+                if(isLogin){//登陆的返回
+                    console.log(result);
+                    if(!result){//登陆失败
+                        console.log(result);
+                        message.error('登陆失败, 重新登陆');
+                    }else{
+                    //      成功
+                        message.success('登陆成功');
+                    //    读取返回的username/userId
+                        const username = result.NickUserName;
+                        const userId = result.UserId;
+                    //    更新状态
+                        /*this.state={
+                         username:null,
+                         visible: false,
+                         selectedKeys:'toutiao'	//当前选中的菜单项
+                         }
+                        * */
+                        this.setState({username})
+                        console.log(this.state.username)
+                    //    保存username/userId
+                        localStorage.setItem('username', username)
+                        localStorage.setItem('userId', userId)
+                    }
+                }else{//注册的返回
+                    // 提示成功
+                    message.success('注册成功')
+                }
+            })
+    //    关闭model
+        this.setState({visible: false})
+    }
+
+
+    //点击用户中心的按钮时的处理，等价于老师的clickMenu
     handleClick = ({key}) => {
         // console.log(e);//{key: "guonei", keyPath: Array(1), item: {…}, domEvent: Proxy}
         if(key == 'logout'){
@@ -57,18 +135,30 @@ class NewsHeader extends Component {
 
     }
     //弹出输入框，点击确定和关闭触发的函数
-    handleOk = () => {
-        this.setState({
-            visible: false,
-        });
+    // handleOk = () => {
+    //     this.setState({
+    //         visible: false,
+    //     });
+    // }
+    // handleCancel = (e) => {
+    //
+    //     this.setState({
+    //         visible: false,
+    //     });
+    // }
+    //弹出对话框之后，可以选择取消或者直接关闭。
+    showModal = (isShow) => {
+        //相当于老师的modalShow
+        this.setState({visible: isShow})
     }
-    handleCancel = (e) => {
-
-        this.setState({
-            visible: false,
-        });
+    //没有弹出登录对话框时，就是在页面上。可以直接退出当前登录的函数。
+    logout=()=>{
+        //    更新状态
+        this.setState({username: null})
+        //    清除保存用户数据
+        localStorage.removeItem('username')
+        localStorage.removeItem('userId')
     }
-
 
 
     render() {
@@ -76,19 +166,26 @@ class NewsHeader extends Component {
 //我也不知道是啥，官方提供的让From用的。
         const { getFieldDecorator } = this.props.form;
 
+        //tabs让用的
+        function callback(key) {
+            console.log(key);
+        }
+
         /*根据是否输入的有username，来判断当前应该显示什么样式的菜单项*/
         const userShow = !this.state.username ? (
             //需要有个在右样式，这个样式需要手动设置
             <Menu.Item key="logout" className="register">
-                <Icon type="appstore" />登录/注册
+                <Icon type="appstore" />登录/注册lallaal
             </Menu.Item>
         ): (
             <Menu.Item key="login" className="register">
-                <Button type='primary'></Button>
-                <Button></Button>
-                <Button></Button>
+                <Button type='primary'>{this.state.username}</Button>
+                &nbsp;&nbsp;
+                <Link to="/user_center"><Button type="dashed">个人中心</Button></Link>&nbsp;&nbsp;
+                <Button onClick={this.logout}>退出</Button>
             </Menu.Item>
         )
+
 
 
 
@@ -135,40 +232,71 @@ class NewsHeader extends Component {
                         <Modal
                             title="用户中心"
                             visible={this.state.visible}
-                            onOk={this.handleOk}
-                            onCancel={this.handleCancel}
+                            onOk={this.showModal.bind(this, false)}
+                            onCancel={() =>this.showModal(false)}
+                            okText="关闭"
                         >
-                            <Form onSubmit={this.handleSubmit} className="login-form">
-                                <FormItem>
-                                    {getFieldDecorator('userName', {
-                                        rules: [{ required: true, message: 'Please input your username!' }],
-                                    })(
-                                        <Input prefix={<Icon type="user" style={{ fontSize: 13 }} />} placeholder="Username" />
-                                    )}
-                                </FormItem>
-                                <FormItem>
-                                    {getFieldDecorator('password', {
-                                        rules: [{ required: true, message: 'Please input your Password!' }],
-                                    })(
-                                        <Input prefix={<Icon type="lock" style={{ fontSize: 13 }} />} type="password" placeholder="Password" />
-                                    )}
-                                </FormItem>
-                                <FormItem>
-                                    {getFieldDecorator('remember', {
-                                        valuePropName: 'checked',
-                                        initialValue: true,
-                                    })(
-                                        <Checkbox>Remember me</Checkbox>
-                                    )}
-                                    <a className="login-form-forgot" href="">Forgot password</a>
-                                    <Button type="primary" htmlType="submit" className="login-form-button">
-                                        Log in
-                                    </Button>
-                                    Or <a href="">register now!</a>
-                                </FormItem>
-                            </Form>
-                        </Modal>
+                            <Tabs defaultActiveKey="1" onChange={callback}>
+                                <TabPane tab="登录" key="1">
+                                    <Form onSubmit={this.handleSubmit.bind(this,true)} className="login-form">
+                                        <FormItem label="用户名">
+                                            {getFieldDecorator('username', {
+                                                rules: [{ required: true, message: '请输入你的用户名!' }],
+                                            })(
+                                                <Input placeholder="输入用户名" />
+                                            )}
+                                        </FormItem>
+                                        <FormItem label="密码">
+                                            {getFieldDecorator('password', {
+                                                rules: [{ required: true, message: '请输入你的密码!' }],
+                                            })(
+                                                <Input placeholder="输入密码" />
+                                            )}
+                                        </FormItem>
+                                        <FormItem>
+                                            <Button type="primary" htmlType="submit" >
+                                                登录
+                                            </Button>
 
+                                        </FormItem>
+                                    </Form>
+                                </TabPane>
+                                <TabPane tab="注册" key="2">
+                                    {/*传参数，代表当前不是登录而是注册*/}
+                                    <Form onSubmit={this.handleSubmit.bind(this,false)} className="login-form">
+                                        <FormItem label="账户">
+                                            {getFieldDecorator('r_username', {
+                                                rules: [{ required: true, message: '请输入你的用户名!' }],
+                                            })(
+                                                <Input placeholder="输入用户名" />
+                                            )}
+                                        </FormItem>
+                                        <FormItem label="密码">
+                                            {getFieldDecorator('r_password', {
+                                                rules: [{ required: true, message: '请输入你的密码!' }],
+                                            })(
+                                                <Input placeholder="输入密码" />
+                                            )}
+                                        </FormItem>
+                                        <FormItem label="确认密码">
+                                            {getFieldDecorator('r_confirmPassword', {
+                                                rules: [{ required: true, message: '请再次输入密码!' }],
+                                            })(
+                                                <Input placeholder="再次输入密码" />
+                                            )}
+                                        </FormItem>
+                                        <FormItem>
+                                            <Button type="primary" htmlType="submit" >
+                                                注册
+                                            </Button>
+
+                                        </FormItem>
+                                    </Form>
+
+                                </TabPane>
+                            </Tabs>
+
+                        </Modal>
 
                     </Col>
                     <Col span={1}></Col>
