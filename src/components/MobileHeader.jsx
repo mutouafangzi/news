@@ -1,5 +1,6 @@
 import React, {Component} from 'react'
-import {Tabs,Form,Modal, Button,Input,Icon} from 'antd'
+import {Tabs,Form,Modal, Button,Input,Icon,message} from 'antd'
+import axios from 'axios'
 import {Link} from 'react-router'
 import logo from '../images/newspaper.png'
 
@@ -14,46 +15,81 @@ class MobileHeader extends Component {
         modalVisible:false
     }
 
+    componentWillMount(){
+        // 读取保存到local中的username
+        const username = localStorage.getItem('username')
+        if(username){
+            //更新状态
+            this.setState({username});
+        }
+    }
 
+
+
+    //点击任何关闭或者取消的按钮，弹出框都会关闭
     setModalVisible= (isVisible)=>{
         this.setState({modalVisible:isVisible})
     }
 
 
-    handleSubmit = (isLogin)=>{
+    handleSubmit = (isLogin,event)=>{
+        //阻止表单的提交默认行为
+        event.preventDefault()
 
         const {username,password,n_userName,n_password,n_cMpassword}=this.props.form.getFieldsValue();
 
         //根据传入的参数判断是登陆还是注册，向不同的接口发送不同的url请求
+        let url = `http://newsapi.gugujiankong.com/Handler.ashx?`;
         if (isLogin){
-            //当前是登陆状态
+            //当前是登陆
             //http://newsapi.gugujiankong.com/Handler.ashx?action=login&username=zxfjd3g&password=123123
             //收集发送url需要的数据
-            let url = `http://newsapi.gugujiankong.com/Handler.ashx?action=login&username=${username}&password=${password}`;
-
-
+            url += `action=login&username=${username}&password=${password}`;
         }else{
             //当前是注册
-            url = `http://newsapi.gugujiankong.com/Handler.ashx?action=register&r_userName=${n_userName}&r_password=${n_password}&r_confirmPassword=${n_cMpassword}`
-
+            url += `action=register&r_userName=${n_userName}&r_password=${n_password}&r_confirmPassword=${n_cMpassword}`
         }
-
-
-
-
-
-        //更改状态
-        this.setState({modalVisible:isLogin})
+        //根据url发送ajax请求
+        axios.get(url)
+            .then(response=>{
+                //清除输入的数据
+                this.props.form.resetFields();
+                //请求返回的数据
+                const result = response.data;
+                if(isLogin){
+                    if(!result){
+                        message.error('登陆错误，请重新登陆');
+                    }else{
+                        message.success('登陆成功')
+                        //将登陆成功的数据保存起来，在当前用户下操作页面
+                        /*"UserId": 514,
+                            "NickUserName": "zxfjd3g",*/
+                        const userid = result.UserId;
+                        const username = result.NickUserName;
+                        //保存
+                        localStorage.setItem('userid',userid);
+                        localStorage.setItem('username',username);
+                        //更新状态
+                        this.setState({username,userid});
+                    }
+                }else{
+                    message.success('注册成功')
+                }
+            })
+        //更改状态。无论登录或者注册成功与否，弹出的对话框都需要关闭。
+        this.setState({modalVisible:false})
     }
 
 
 
     render() {
 
-        const userItem=(<h2>hahahah</h2>);
-        const {modalVisible} = this.state;
+        const {username,userid,modalVisible} = this.state;
         const {getFieldDecorator} = this.props.form;
-
+        const userItem=(username
+                ?(<Link to={'/user_center'}>
+                    <Icon type="home" /></Link>)
+                :(<Icon type="setting" onClick={this.setModalVisible.bind(this,true)}/>));
 
         return (
             <div id="mobileheader">
@@ -75,7 +111,7 @@ class MobileHeader extends Component {
                 >
                     <Tabs type='card' defaultActiveKey="1" onChange={()=>this.props.form.resetFields()}>
                         <TabPane tab="登录" key="1">
-                            <Form onSubmit={this.handleSubmit.bind(this,false)}>
+                            <Form onSubmit={this.handleSubmit.bind(this,true)}>
                                 <FormItem label='账户'>
                                     {getFieldDecorator('username')(
                                         <Input type='text' placeholder="Username" />
@@ -92,7 +128,7 @@ class MobileHeader extends Component {
                             </Form>
                         </TabPane>
                         <TabPane tab="注册" key="2">
-                            <Form onSubmit={this.handleSubmit.bind(this, true)}>
+                            <Form onSubmit={this.handleSubmit.bind(this, false)}>
                                 <FormItem label='你的名字'>
                                     {getFieldDecorator('n_userName')(
                                         <Input type='你的名字' placeholder="Username" />

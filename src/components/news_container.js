@@ -1,5 +1,5 @@
 import React, {Component} from 'react'
-import {Row , Col , Tabs , Carousel , Card} from 'antd'
+import {Row , Col , Tabs , Carousel } from 'antd'
 import NewsBlock from './news_block'
 import NewsProducts from './news_products'
 import NewsImageBlock from './news_image_block'

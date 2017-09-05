@@ -39,16 +39,14 @@ export default class UserCenter extends Component {
                 this.setState({comments})
             })
     }
-
+    //这些都是头像上传用的
     handleCancel = () => this.setState({ previewVisible: false })
-
     handlePreview = (file) => {
         this.setState({
             previewImage: file.url || file.thumbUrl,
             previewVisible: true,
         });
     }
-
     handleChange = ({ fileList }) => this.setState({ fileList })
 
     render() {

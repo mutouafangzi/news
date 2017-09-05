@@ -1,6 +1,6 @@
 import React, {Component} from 'react'
 import axios from 'axios';
-import {Row,Col,Form} from 'antd';
+import {Row,Col} from 'antd';
 import NewsComments from './news_comments'
 import NewsImageBlock from "./news_image_block";
 

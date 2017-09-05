@@ -44,7 +44,7 @@
 }
 /*轮播图下四个小横杠的颜色*/
 .ant-carousel .slick-dots li button{
-  background: red;
+  background: #2DB7F5;
 }
 
 /*新闻列表*/

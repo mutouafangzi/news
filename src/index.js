@@ -30,7 +30,7 @@ render(
                 <Router history={hashHistory}>
                     <Route path='/' component={MobileApp}>
                         <IndexRoute component={MobileNewsContainer}/>
-                        <Router path="/news_detail/:uniquekey/:type" component={MobileDetail}></Router>
+                        <Router path="/news_detail/:uniquekey" component={MobileDetail}></Router>
                         <Router path="/user_center" component={MobileUserCenter}></Router>
                     </Route>
                 </Router>
