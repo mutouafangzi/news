@@ -3,7 +3,7 @@ import axios from 'axios'
 import {Card} from 'antd'
 import {Link} from 'react-router'
 
-export default class userCenter extends Component {
+export default class NewsBlock extends Component {
 
     static propTypes={
         type:PropTypes.string.isRequired,
